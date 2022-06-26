@@ -20,6 +20,9 @@
       "memory": 1024,
       "net_device": "virtio-net",
       "output_directory": "output",
+      "qemuargs": [
+        ["-cpu", "host"]
+      ],
       "shutdown_command": "shutdown -P now",
       "ssh_password": "{{ user `password` }}",
       "ssh_timeout": "20m",
