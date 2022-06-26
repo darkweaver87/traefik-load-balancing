@@ -57,7 +57,7 @@ upload-image:
 	$(eval  size = $(shell stat -Lc%s packer/output/debian11))
 	- virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-list $(LIBVIRT_IMAGES_POOL) | grep $(LIBVIRT_IMAGE_NAME) && virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-delete --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME)
 	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-create-as $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) $(size) --format qcow2 && \
-	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) packer/output/debian11
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) PACKER_LOG=1 packer/output/debian11
 
 import-kube-nodes:
 	[ $(CLUSTER) -eq 3 ] && { \
