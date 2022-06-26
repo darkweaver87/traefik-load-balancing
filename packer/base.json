@@ -8,7 +8,7 @@
     {
       "accelerator": "kvm",
       "boot_command": [
-        "<down><down><enter><down><down><down><down><down><down><tab> preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/debian10.txt auto-install/enable=true DEBCONF_DEBUG=5<enter><wait>"
+        "<down><down><enter><down><down><down><down><down><down><tab> preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/debian11.txt auto-install/enable=true DEBCONF_DEBUG=5<enter><wait>"
       ],
       "boot_wait": "5s",
       "disk_interface": "virtio",
