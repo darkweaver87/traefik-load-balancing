@@ -31,7 +31,7 @@
       "ssh_timeout": "20m",
       "ssh_username": "{{ user `login` }}",
       "type": "qemu",
-      "vm_name": "debian10"
+      "vm_name": "debian11"
     }
   ],
   "provisioners": [

@@ -7,7 +7,7 @@ TERRAFORM_ANSIBLE_VERSION=2.5.0
 ANSIBLE_VERSION=2.9.6
 LIBVIRT_HYPERVISOR_URI="qemu:///system"
 LIBVIRT_IMAGES_POOL="templates"
-LIBVIRT_IMAGE_NAME="debian10-traefik.qcow2"
+LIBVIRT_IMAGE_NAME="debian11-traefik.qcow2"
 ROOT_PASSWORD="traefik"
 $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head -n 1))
 CLUSTER=1
@@ -50,14 +50,14 @@ image: build-image upload-image
 build-image:
 	rm -rf  packer/output
 	$(eval CRYPTED_PASSWORD = $$(shell openssl passwd -6 "$(ROOT_PASSWORD)"))
-	sed -i -r 's@^(d-i passwd\/root-password-crypted password).*@\1 $(CRYPTED_PASSWORD)@g' packer/preseed/debian10.txt
+	sed -i -r 's@^(d-i passwd\/root-password-crypted password).*@\1 $(CRYPTED_PASSWORD)@g' packer/preseed/debian11.txt
 	cd packer && ROOT_PASSWORD=$(ROOT_PASSWORD) SSH_PUB_KEY="$(shell cat $(SSH_IDENTITY).pub)" packer build base.json
 
 upload-image:
-	$(eval  size = $(shell stat -Lc%s packer/output/debian10))
+	$(eval  size = $(shell stat -Lc%s packer/output/debian11))
 	- virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-list $(LIBVIRT_IMAGES_POOL) | grep $(LIBVIRT_IMAGE_NAME) && virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-delete --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME)
 	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-create-as $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) $(size) --format qcow2 && \
-	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) packer/output/debian10
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) packer/output/debian11
 
 import-kube-nodes:
 	[ $(CLUSTER) -eq 3 ] && { \
