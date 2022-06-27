@@ -45,7 +45,16 @@ install-terraform-plugins:
 	test -f $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible || \
 	(curl -L https://github.com/radekg/terraform-provisioner-ansible/releases/download/v$(TERRAFORM_ANSIBLE_VERSION)/terraform-provisioner-ansible-linux-amd64_v$(TERRAFORM_ANSIBLE_VERSION) -o $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible && chmod +x $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible)
 
-image: create-pool build-image upload-image
+image: modify-network create-pool build-image upload-image
+
+modify-network:
+ifeq ($(ip -br addr show virbr0 | awk -F" " '{print $3}'), '192.168.122.1/24')
+	virsh net-dumpxml --network default | sed 's/192.168.122./192.168.1./g' > net_update.xml
+	virsh net-destroy default && virsh net-undefine default
+	virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
+	rm net_update.xml
+endif
+
 
 create-pool:
 ifneq ($(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL) 1>&2 2> /dev/null; echo $$?), 0)
