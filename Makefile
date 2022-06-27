@@ -49,15 +49,15 @@ image: modify-network create-pool build-image upload-image
 
 modify-network:
 ifeq ($(ip -br addr show virbr0 | awk -F" " '{print $3}'), '192.168.122.1/24')
-	virsh net-dumpxml --network default | sed 's/192.168.122./192.168.1./g' > net_update.xml
-	virsh net-destroy default && virsh net-undefine default
-	virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
-	rm net_update.xml
+    virsh net-dumpxml --network default | sed 's/192.168.122./192.168.1./g' > net_update.xml
+    virsh net-destroy default && virsh net-undefine default
+    virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
+    rm net_update.xml
 endif
 
 create-pool:
-ifneq ($(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL); echo $$?), 0)
-	virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "/tmp/$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
+ifneq ($(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL)  >> /dev/null 2>&1 && echo 0 || echo 1), 0)
+    virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "/tmp/$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
 endif
 
 build-image:
