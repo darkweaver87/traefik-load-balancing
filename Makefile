@@ -41,7 +41,7 @@ install-ansible:
 install-terraform-plugins:
 	test -d $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/ || mkdir -p $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/; \
 	test -f $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/terraform-provider-libvirt || \
-	(curl -L https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v$(TERRAFORM_LIBVIRT_VERSION)/terraform-provider-libvirt_$(TERRAFORM_LIBVIRT_VERSION)_linux_amd64.zip -o /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip && unzip /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip -d $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt && rm -f /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip); \
+	(curl -L https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v$(TERRAFORM_LIBVIRT_VERSION)/terraform-provider-libvirt_$(TERRAFORM_LIBVIRT_VERSION)_linux_amd64.zip -o /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip && mkdir -p $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/0.6.14/linux_amd64 && unzip /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip -j terraform-provider-libvirt_$(TERRAFORM_LIBVIRT_VERSION) -d $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/0.6.14/linux_amd64/terraform-provider-libvirt && rm -f /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip); \
 un	test -f $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible || \
 	(curl -L https://github.com/radekg/terraform-provisioner-ansible/releases/download/v$(TERRAFORM_ANSIBLE_VERSION)/terraform-provisioner-ansible-linux-amd64_v$(TERRAFORM_ANSIBLE_VERSION) -o $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible && chmod +x $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible)
 
@@ -73,6 +73,7 @@ import-kube-nodes:
 	} || echo "not importing"
 
 create-vms: import-kube-nodes
+    virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as images dir - - - - "/tmp/images" && virsh pool-build images && virsh pool-start images && virsh pool-autostart $(LIBVIRT_IMAGES_POOL)
 	cd terraform && terraform init && terraform apply -auto-approve -var "libvirt_uri=$(LIBVIRT_HYPERVISOR_URI)" -var "ssh_key=$(SSH_IDENTITY)" -var-file="cluster$(CLUSTER).tfvars" -state="cluster$(CLUSTER).tfstate"
 
 run-playbook: create-vms
