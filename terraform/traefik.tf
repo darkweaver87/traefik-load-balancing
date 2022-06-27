@@ -30,10 +30,10 @@ provider "libvirt" {
 resource "libvirt_volume" "disk" {
   count = length(var.vms)
   name  = "${var.vms[count.index].name}.qcow2"
-  pool = "images"
+  pool = "templates"
   base_volume_pool = "templates"
-  base_volume_name = "debian10-traefik.qcow2"
- #  source = "templates/${lookup(var.vms[count.index], "image", "debian10-traefik")}.qcow2"
+  base_volume_name = "debian11-traefik.qcow2"
+ #  source = "templates/${lookup(var.vms[count.index], "templates", "debian11-traefik")}.qcow2"
 }
 
 resource "libvirt_domain" "vm" {
