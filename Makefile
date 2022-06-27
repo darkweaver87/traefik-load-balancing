@@ -7,13 +7,12 @@ TERRAFORM_ANSIBLE_VERSION=2.5.0
 ANSIBLE_VERSION=2.9.6
 LIBVIRT_HYPERVISOR_URI="qemu:///system"
 LIBVIRT_TEMPLATE_POOL="templates"
-LIBVIRT_IMAGES_POOL="images"
 LIBVIRT_IMAGE_NAME="debian11-traefik.qcow2"
 ROOT_PASSWORD="traefik"
 $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head -n 1))
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
-POOL_TEMPLATE_STATUS := $(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL) 1>&2 2> /dev/null; echo $$?)
+POOL_TEMPLATE_STATUS=$(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL) 1>&2 2> /dev/null; echo $$?)
 
 all:
 
@@ -56,13 +55,13 @@ build-image:
 	cd packer && ROOT_PASSWORD=$(ROOT_PASSWORD) SSH_PUB_KEY="$(shell cat $(SSH_IDENTITY).pub)" packer build base.json
 
 upload-image:
-        ifneq ($(POOL_TEMPLATE_STATUS), 0)
-            virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "/tmp/$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
-        endif
-        $(eval  size = $(shell stat -Lc%s packer/output/debian11))
-        - virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-list $(LIBVIRT_TEMPLATE_POOL) | grep $(LIBVIRT_IMAGE_NAME) && virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-delete --pool $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME)
-        virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-create-as $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME) $(size) --format qcow2 && \
-        virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME)  packer/output/debian11
+ifneq ($(POOL_TEMPLATE_STATUS), 0)
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "/tmp/$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
+endif
+    $(eval  size = $(shell stat -Lc%s packer/output/debian11))
+    - virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-list $(LIBVIRT_TEMPLATE_POOL) | grep $(LIBVIRT_IMAGE_NAME) && virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-delete --pool $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME)
+    virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-create-as $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME) $(size) --format qcow2 && \
+    virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME)  packer/output/debian11
 import-kube-nodes:
 	[ $(CLUSTER) -eq 3 ] && { \
 	cd terraform ; \
