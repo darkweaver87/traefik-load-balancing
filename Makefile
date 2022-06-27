@@ -55,6 +55,7 @@ build-image:
 
 upload-image:
     virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_IMAGES_POOL) dir - - - - "/tmp/$(LIBVIRT_IMAGES_POOL)" && virsh pool-build $(LIBVIRT_IMAGES_POOL) && virsh pool-start $(LIBVIRT_IMAGES_POOL) && virsh pool-autostart $(LIBVIRT_IMAGES_POOL)
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as images dir - - - - "/tmp/images" && virsh pool-build images && virsh pool-start images && virsh pool-autostart $(LIBVIRT_IMAGES_POOL)
 	$(eval  size = $(shell stat -Lc%s packer/output/debian11))
 	- virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-list $(LIBVIRT_IMAGES_POOL) | grep $(LIBVIRT_IMAGE_NAME) && virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-delete --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME)
 	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-create-as $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) $(size) --format qcow2 && \
@@ -73,7 +74,6 @@ import-kube-nodes:
 	} || echo "not importing"
 
 create-vms: import-kube-nodes
-    virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as images dir - - - - "/tmp/images" && virsh pool-build images && virsh pool-start images && virsh pool-autostart $(LIBVIRT_IMAGES_POOL)
 	cd terraform && terraform init && terraform apply -auto-approve -var "libvirt_uri=$(LIBVIRT_HYPERVISOR_URI)" -var "ssh_key=$(SSH_IDENTITY)" -var-file="cluster$(CLUSTER).tfvars" -state="cluster$(CLUSTER).tfstate"
 
 run-playbook: create-vms
