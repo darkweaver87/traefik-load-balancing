@@ -14,7 +14,7 @@ $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head 
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
 POOL_TEMPLATE_STATUS := $(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL) 1>&2 2> /dev/null; echo $$?)
-POOL_IMAGE_STATUS := $(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_IMAGE_POOL) 1>&2 2> /dev/null; echo $$?)
+POOL_IMAGE_STATUS := $(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_IMAGES_POOL) 1>&2 2> /dev/null; echo $$?)
 
 all:
 
