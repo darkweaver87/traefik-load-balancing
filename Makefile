@@ -45,9 +45,9 @@ install-terraform-plugins:
 	test -f $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible || \
 	(curl -L https://github.com/radekg/terraform-provisioner-ansible/releases/download/v$(TERRAFORM_ANSIBLE_VERSION)/terraform-provisioner-ansible-linux-amd64_v$(TERRAFORM_ANSIBLE_VERSION) -o $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible && chmod +x $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible)
 
-prep_qemu: modify_user modify-network create-pool 
+prep-qemu: modify_user modify-network create-pool 
 
-modify_user:
+modify-user:
 ifeq ($(grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2), "root")
 ifeq ($(grep "#group = " /etc/libvirt/qemu.conf | cut -d'"' -f2), "root")
 	sed -i 's/\#user = \"root\"/\user = \"root\"/g' /etc/libvirt/qemu.conf
