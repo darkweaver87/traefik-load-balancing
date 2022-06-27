@@ -21,7 +21,7 @@
       "net_device": "virtio-net",
       "output_directory": "output",
       "qemuargs": [
-        ["-nographic"],
+        ["-display", "none"],
         ["-cpu", "host"]
       ],
       "shutdown_command": "shutdown -P now",
