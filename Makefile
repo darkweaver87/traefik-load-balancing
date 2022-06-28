@@ -10,8 +10,8 @@ LIBVIRT_TEMPLATE_POOL="templates"
 LIBVIRT_IMAGE_NAME="debian11-traefik.qcow2"
 ROOT_PASSWORD="traefik"
 $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head -n 1))
-QEMU_INIT_USER=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2)
-QEMU_INIT_GROUP=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2)
+$(eval QEMU_INIT_USER=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
+$(eval QEMU_INIT_GROUP=$(shell grep "#group = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
 
@@ -47,13 +47,15 @@ install-terraform-plugins:
 	test -f $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible || \
 	(curl -L https://github.com/radekg/terraform-provisioner-ansible/releases/download/v$(TERRAFORM_ANSIBLE_VERSION)/terraform-provisioner-ansible-linux-amd64_v$(TERRAFORM_ANSIBLE_VERSION) -o $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible && chmod +x $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible)
 
-prep-qemu: modify_user modify-network create-pool 
+prep-qemu: modify-user modify-network create-pool 
 
 modify-user:
-ifneq ($(shell [[ $(QEMU_INIT_USER) == "root" && $(QEMU_INIT_GROUP) == "root" ]] && echo true ),true) 
-	sed -i 's/\#user = \"root\"/\user = \"root\"/g' /etc/libvirt/qemu.conf
-	sed -i 's/\#user = \"root\"/\user = \"root\"/g' /etc/libvirt/qemu.conf
+ifeq ($(QEMU_INIT_USER),root)
+  ifeq ($(QEMU_INIT_GROUP),root)
+	sed -i 's/\#user = \"root\"/user = \"root\"/g' /etc/libvirt/qemu.conf
+	sed -i 's/\#group = \"root\"/group = \"root\"/g' /etc/libvirt/qemu.conf
 	systemctl restart libvirtd
+  endif
 endif
 
 image: build-image upload-image
