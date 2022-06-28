@@ -68,7 +68,7 @@ endif
 
 
 create-pool:
-	test -d /tmp/$(LIBVIRT_TEMPLATE_POOL) || mkdir -p /tmp/$(LIBVIRT_TEMPLATE_POOL)
+	test -d /tmp/$(LIBVIRT_TEMPLATE_POOL) || mkdir -p /tmp/$(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL)
 ifneq ($(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL)  >> /dev/null 2>&1 && echo 0 || echo 1), 0)
 	virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "/tmp/$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
 endif
