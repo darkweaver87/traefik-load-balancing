@@ -10,6 +10,8 @@ LIBVIRT_TEMPLATE_POOL="templates"
 LIBVIRT_IMAGE_NAME="debian11-traefik.qcow2"
 ROOT_PASSWORD="traefik"
 $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head -n 1))
+QEMU_INIT_USER=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2)
+QEMU_INIT_GROUP=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2)
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
 
@@ -48,18 +50,16 @@ install-terraform-plugins:
 prep-qemu: modify_user modify-network create-pool 
 
 modify-user:
-ifeq ($(grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2), "root")
-ifeq ($(grep "#group = " /etc/libvirt/qemu.conf | cut -d'"' -f2), "root")
+ifneq ($(shell [[ $(QEMU_INIT_USER) == "root" && $(QEMU_INIT_GROUP) == "root" ]] && echo true ),true) 
 	sed -i 's/\#user = \"root\"/\user = \"root\"/g' /etc/libvirt/qemu.conf
 	sed -i 's/\#user = \"root\"/\user = \"root\"/g' /etc/libvirt/qemu.conf
 	systemctl restart libvirtd
-endif
 endif
 
 image: build-image upload-image
 
 modify-network:
-ifeq ($(ip -br addr show virbr0 | awk -F" " '{print $3}'), '192.168.122.1/24')
+ifeq ($(shell ip -br addr show virbr0 | awk -F" " '{print $3}'), '192.168.122.1/24')
     virsh net-dumpxml --network default | sed 's/192.168.122./192.168.1./g' > net_update.xml
     virsh net-destroy default && virsh net-undefine default
     virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
