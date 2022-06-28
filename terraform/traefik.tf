@@ -79,8 +79,8 @@ resource "libvirt_domain" "vm" {
       connect_timeout_seconds = 10
       connection_attempts = 10
       ssh_keyscan_timeout = 60
-      insecure_no_strict_host_key_checking = false
-      insecure_bastion_no_strict_host_key_checking = false
+      insecure_no_strict_host_key_checking = true
+      insecure_bastion_no_strict_host_key_checking = true
       user_known_hosts_file = ""
       bastion_user_known_hosts_file = ""
     }
