@@ -47,6 +47,7 @@ resource "libvirt_domain" "vm" {
   memory = lookup(var.vms[count.index], "memory", 512)
 
   network_interface {
+    network_name = "default"
     bridge = "virbr0"
     wait_for_lease = true
   }
@@ -69,7 +70,8 @@ resource "libvirt_domain" "vm" {
     when = create
     connection {
       type = "ssh"
-      host = self.network_interface.0.addresses.0
+      #host = self.network_interface.0.addresses.0
+      host = self.ipv4_address
       user = "root"
       private_key = file(var.ssh_key)
     }
