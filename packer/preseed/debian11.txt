@@ -21,7 +21,7 @@ d-i mirror/http/proxy string
 ### Account setup
 d-i passwd/root-login boolean true
 d-i passwd/make-user boolean false
-d-i passwd/root-password-crypted password $6$clcx.AvPpnz9MCW2$W/wyFBlBXkoSQ1W6MLJo0XbeMx1BieSWenSxRWqcrUmDgZWmKRz2CR79Jc1kFJiCFCJGDd9.dXt.f7C9zPko00
+d-i passwd/root-password-crypted password 
 d-i clock-setup/utc boolean true
 d-i time/zone string Europe/Paris
 d-i clock-setup/ntp boolean true

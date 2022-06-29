@@ -38,6 +38,7 @@
         "mkdir /root/.ssh",
         "echo \"{{ user `sshkey` }}\" > /root/.ssh/authorized_keys",
         "sed -e '/^PasswordAuthentication yes/d' -e '/^PermitRootLogin yes/d' -i /etc/ssh/sshd_config",
+        "echo net.ipv6.conf.all.disable_ipv6 = 1 >> /etc/sysctl.conf",
         "echo 'WantedBy=dev-virtio\\x2dports-org.qemu.guest_agent.0.device' >> /lib/systemd/system/qemu-guest-agent.service",
         "systemctl daemon-reload",
         "systemctl enable qemu-guest-agent.service"
