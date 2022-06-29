@@ -66,7 +66,7 @@ resource "libvirt_domain" "vm" {
   }
 
   provisioner "ansible" {
-
+    when = create
     connection {
       type = "ssh"
       host = self.network_interface.0.addresses.0
