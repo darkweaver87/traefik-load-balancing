@@ -67,8 +67,7 @@ endif
 
 modify-network:
 ifeq ($(shell ip -br addr show virbr0 | awk -F" " '{print $3}'), '192.168.122.1/24')
-    virsh net-dumpxml --network default | sed 's/192.168.122.1/192.168.1.254/g' > net_update.xml
-    virsh net-dumpxml --network default | sed 's/192.168.122./192.168.1./g' > net_update.xml
+    virsh net-dumpxml --network default | sed 's/192.168.122./192.168.1./g' | sed 's/192.168.1.254/192.168.1.253/g' | sed 's/192.168.1.1/192.168.1.254/g' > net_update.xml
     virsh net-destroy default && virsh net-undefine default
     virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
     rm net_update.xml
