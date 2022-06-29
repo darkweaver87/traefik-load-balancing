@@ -35,7 +35,6 @@
   "provisioners": [
     {
       "inline": [
-        "lvremove -f vg_00/lv_empty00",
         "mkdir /root/.ssh",
         "echo \"{{ user `sshkey` }}\" > /root/.ssh/authorized_keys",
         "sed -e '/^PasswordAuthentication yes/d' -e '/^PermitRootLogin yes/d' -i /etc/ssh/sshd_config",
