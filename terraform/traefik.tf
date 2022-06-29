@@ -48,6 +48,7 @@ resource "libvirt_domain" "vm" {
 
   network_interface {
     bridge = "virbr0"
+
     wait_for_lease = true
   }
 
@@ -66,7 +67,6 @@ resource "libvirt_domain" "vm" {
   }
 
   provisioner "ansible" {
-    when = create
 
     connection {
       type = "ssh"
