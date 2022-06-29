@@ -13,6 +13,7 @@ $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head 
 $(eval QEMU_INIT_USER=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
 $(eval QEMU_INIT_GROUP=$(shell grep "#group = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
 $(eval QEMU_SECU_DRIVER=$(shell grep "#security_driver = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
+TEMPLATE_FOLDER_PATH=/libvirt/
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
 
@@ -73,9 +74,9 @@ ifeq ($(shell ip -br addr show virbr0 | awk -F" " '{print $3}'), '192.168.122.1/
 endif
 
 create-pool:
-	test -d /tmp/$(LIBVIRT_TEMPLATE_POOL) || mkdir -p /tmp/$(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL)
+	test -d $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL) || mkdir -p $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL) || chmod -R rwx $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)
 ifneq ($(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL)  >> /dev/null 2>&1 && echo 0 || echo 1), 0)
-	virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "/tmp/$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "$(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
 endif
 
 image: build-image upload-image
