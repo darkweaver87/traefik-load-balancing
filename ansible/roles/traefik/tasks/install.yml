@@ -2,7 +2,7 @@
   unarchive:
     src: https://github.com/traefik/traefik/releases/download/v{{traefik_version}}/traefik_v{{traefik_version}}_linux_amd64.tar.gz
     dest: /usr/local/bin
-    remote_src: no
+    remote_src: yes
     exclude:
       - "*.md"
   args:

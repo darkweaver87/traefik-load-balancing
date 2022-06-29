@@ -116,4 +116,4 @@ run-playbook: create-vms
 scratch-clusters:
 	for i in $(virsh list | awk -F' ' '{print $2}' | grep -v Name); do virsh destroy $i; virsh undefine $i; done
 	rm terraform/.terraform.lock.hcl terraform/*.tfstate ansible/traefik_inventory
-	
+	rm -rf $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)/kube*.qcow2 $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)/traefik*.qcow2
