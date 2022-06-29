@@ -71,7 +71,7 @@ resource "libvirt_domain" "vm" {
     connection {
       type = "ssh"
       #host = self.network_interface.0.addresses.0
-      host = libvirt_domain.domain.*.network_interface.0.addresses
+      host = libvirt_domain.vm.*.network_interface.0.addresses
       user = "root"
       private_key = file(var.ssh_key)
     }
