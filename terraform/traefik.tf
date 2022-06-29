@@ -48,7 +48,6 @@ resource "libvirt_domain" "vm" {
 
   network_interface {
     bridge = "virbr0"
-
     wait_for_lease = true
   }
 
