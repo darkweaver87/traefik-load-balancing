@@ -47,7 +47,7 @@ resource "libvirt_domain" "vm" {
   memory = lookup(var.vms[count.index], "memory", 512)
 
   network_interface {
-    network_name   = "default"
+    bridge = "virbr0"
     wait_for_lease = true
   }
 

@@ -12,6 +12,7 @@ ROOT_PASSWORD="traefik"
 $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head -n 1))
 $(eval QEMU_INIT_USER=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
 $(eval QEMU_INIT_GROUP=$(shell grep "#group = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
+$(eval QEMU_SECU_DRIVER=$(shell grep "#security_driver = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
 
@@ -47,7 +48,12 @@ install-terraform-plugins:
 	test -f $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible || \
 	(curl -L https://github.com/radekg/terraform-provisioner-ansible/releases/download/v$(TERRAFORM_ANSIBLE_VERSION)/terraform-provisioner-ansible-linux-amd64_v$(TERRAFORM_ANSIBLE_VERSION) -o $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible && chmod +x $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible)
 
-prep-qemu: modify-user modify-network create-pool 
+prep-qemu: modify-secu modify-user modify-network create-pool 
+
+modify-secu:
+ifeq ($(QEMU_SECU_DRIVER),selinux)
+	sed -i 's/\#security_driver = \"selinux\"/security_driver = \"none\"/g' /etc/libvirt/qemu.conf
+endif
 
 modify-user:
 ifeq ($(QEMU_INIT_USER),root)
@@ -65,7 +71,6 @@ ifeq ($(shell ip -br addr show virbr0 | awk -F" " '{print $3}'), '192.168.122.1/
     virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
     rm net_update.xml
 endif
-
 
 create-pool:
 	test -d /tmp/$(LIBVIRT_TEMPLATE_POOL) || mkdir -p /tmp/$(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL)
