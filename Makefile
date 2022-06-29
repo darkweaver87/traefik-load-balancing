@@ -114,6 +114,6 @@ run-playbook: create-vms
 	cd ansible && ansible-playbook -u root -i traefik_inventory -e "traefikee_license_key=$(TRAEFIKEE_LICENSE_KEY)" site.yml
 
 scratch-clusters:
-	for i in $(virsh list | awk -F' ' '{print $2}' | grep -v Name); do virsh destroy $i; virsh undefine $i; done
+	for i in $(shell $(virsh list | awk -F' ' '{print $2}' | grep -v Name)); do virsh destroy $i; virsh undefine $i; done
 	rm terraform/.terraform.lock.hcl terraform/*.tfstate ansible/traefik_inventory
 	rm -rf $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)/kube*.qcow2 $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)/traefik*.qcow2
