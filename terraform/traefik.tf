@@ -2,7 +2,7 @@ terraform {
   required_providers {
     libvirt = {
       source  = "github.com/dmacvicar/libvirt"
-      version = "0.6.14"
+      version = "0.6.12"
     }
   }
 }
