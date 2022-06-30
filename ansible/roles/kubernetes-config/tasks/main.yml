@@ -1,19 +1,11 @@
-- name: Pause to wait Kube is ready
-  ansible.builtin.pause:
-    minutes: 1
-
-- name: Create a the ingress
+- name: Create the ingress
   k8s:
-    host: https://192.168.1.74:6443
-    validate_certs: no
     kubeconfig: /tmp/kubeconfig-k3s
     resource_definition: "{{ lookup('file', 'traefik.yml') }}"
     state: present
 
 - name: Create the app
   k8s:
-    host: https://192.168.1.74:6443
     kubeconfig: /tmp/kubeconfig-k3s
-    validate_certs: no
     resource_definition: "{{ lookup('file', 'whoami.yml') }}"
     state: present
