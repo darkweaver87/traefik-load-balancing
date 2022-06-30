@@ -2239,8 +2239,9 @@ status:
   conditions: []
   storedVersions: []
 
-apiVersion: rbac.authorization.k8s.io/v1
+---
 kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: traefik-ingress-controller
 
@@ -2275,7 +2276,6 @@ rules:
       - traefik.containo.us
     resources:
       - middlewares
-      - middlewaretcps
       - ingressroutes
       - traefikservices
       - ingressroutetcps
@@ -2289,8 +2289,8 @@ rules:
       - watch
 
 ---
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: traefik-ingress-controller
 
