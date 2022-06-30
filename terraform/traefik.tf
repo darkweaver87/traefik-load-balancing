@@ -2,7 +2,7 @@ terraform {
   required_providers {
     libvirt = {
       source  = "github.com/dmacvicar/libvirt"
-      version = "0.6.12"
+      version = "0.6.14"
     }
   }
 }
@@ -40,7 +40,6 @@ resource "libvirt_domain" "vm" {
   count = length(var.vms)
   name  = var.vms[count.index].name
 
-  qemu_agent = true
   autostart = true
 
   vcpu   = lookup(var.vms[count.index], "cpu", 1)
