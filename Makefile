@@ -1,15 +1,21 @@
 LOCAL_BIN=~/.local/bin/
-PACKER_VERSION=1.6.2
+PACKER_VERSION=1.8.2
 TERRAFORM_PLUGIN_DIR=~/.terraform.d/plugins
-TERRAFORM_VERSION=0.13.3
-TERRAFORM_LIBVIRT_VERSION=0.6.2
-TERRAFORM_ANSIBLE_VERSION=2.3.3
-ANSIBLE_VERSION=2.9.13
+TERRAFORM_VERSION=1.2.3
+TERRAFORM_LIBVIRT_VERSION=0.6.14
+TERRAFORM_ANSIBLE_VERSION=2.5.0
+ANSIBLE_VERSION=2.9.6
 LIBVIRT_HYPERVISOR_URI="qemu:///system"
-LIBVIRT_IMAGES_POOL="templates"
-LIBVIRT_IMAGE_NAME="debian10-traefik.qcow2"
+LIBVIRT_TEMPLATE_POOL="templates"
+LIBVIRT_IMAGE_NAME="debian11-traefik.qcow2"
 ROOT_PASSWORD="traefik"
 $(eval SSH_IDENTITY=$(shell find ~/.ssh/ -name 'id_*' -not -name '*.pub' | head -n 1))
+$(eval QEMU_INIT_USER=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
+$(eval QEMU_INIT_GROUP=$(shell grep "#group = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
+$(eval QEMU_SECU_DRIVER=$(shell grep "#security_driver = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
+$(eval BRIDGE_IP=$(shell ip -br addr show virbr0 | awk -F" " '{print $$3}'))
+$(eval IS_BRIDGE_UP=$(shell ip a show virbr0 up 2>/dev/null 1>&2; echo $$?))
+TEMPLATE_FOLDER_PATH=/libvirt/
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
 
@@ -41,23 +47,63 @@ install-ansible:
 install-terraform-plugins:
 	test -d $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/ || mkdir -p $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/; \
 	test -f $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/terraform-provider-libvirt || \
-	(curl https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v$(TERRAFORM_LIBVIRT_VERSION)/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION)+git.1585292411.8cbe9ad0.Ubuntu_18.04.amd64.tar.gz -o /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).tar.gz && tar xfvz /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).tar.gz -C $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/ && rm -f /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).tar.gz)
+	(curl -L https://github.com/dmacvicar/terraform-provider-libvirt/releases/download/v$(TERRAFORM_LIBVIRT_VERSION)/terraform-provider-libvirt_$(TERRAFORM_LIBVIRT_VERSION)_linux_amd64.zip -o /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip && mkdir -p $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64 && unzip -j /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip terraform-provider-libvirt_v$(TERRAFORM_LIBVIRT_VERSION) -d $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/ && mv $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/terraform-provider-libvirt_v$(TERRAFORM_LIBVIRT_VERSION) $(TERRAFORM_PLUGIN_DIR)/github.com/dmacvicar/libvirt/$(TERRAFORM_LIBVIRT_VERSION)/linux_amd64/terraform-provider-libvirt && rm -f /tmp/terraform-provider-libvirt-$(TERRAFORM_LIBVIRT_VERSION).zip); \
 	test -f $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible || \
-	(curl https://github.com/radekg/terraform-provisioner-ansible/releases/download/v$(TERRAFORM_ANSIBLE_VERSION)/terraform-provisioner-ansible-linux-amd64_v$(TERRAFORM_ANSIBLE_VERSION) -o $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible && chmod +x $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible)
+	(curl -L https://github.com/radekg/terraform-provisioner-ansible/releases/download/v$(TERRAFORM_ANSIBLE_VERSION)/terraform-provisioner-ansible-linux-amd64_v$(TERRAFORM_ANSIBLE_VERSION) -o $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible && chmod +x $(TERRAFORM_PLUGIN_DIR)/terraform-provisioner-ansible)
+
+prep-qemu: modify-secu modify-user modify-network create-pool 
+
+modify-secu:
+ifeq ($(QEMU_SECU_DRIVER),selinux)
+	sed -i 's/\#security_driver = \"selinux\"/security_driver = \"none\"/g' /etc/libvirt/qemu.conf
+endif
+
+modify-user:
+ifeq ($(QEMU_INIT_USER),root)
+  ifeq ($(QEMU_INIT_GROUP),root)
+	sed -i 's/\#user = \"root\"/user = \"root\"/g' /etc/libvirt/qemu.conf
+	sed -i 's/\#group = \"root\"/group = \"root\"/g' /etc/libvirt/qemu.conf
+	systemctl restart libvirtd
+  endif
+endif
+
+modify-network:
+ifeq ($(IS_BRIDGE_UP),0)
+  ifeq ($(BRIDGE_IP),192.168.122.1/24)
+	virsh net-dumpxml --network default > net_update.xml 
+	sed -i 's/192.168.122./192.168.1./g' net_update.xml && sed -i 's/192.168.1.254/192.168.1.253/g' net_update.xml | sed -i 's/192.168.1.1/192.168.1.254/g' net_update.xml
+	virsh net-destroy default && virsh net-undefine default
+	virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
+	rm net_update.xml
+  endif
+endif
+ifeq ($(IS_BRIDGE_UP),1)
+	virsh net-dumpxml --network default > net_update.xml 
+	sed -i 's/192.168.122./192.168.1./g' net_update.xml && sed -i 's/192.168.1.254/192.168.1.253/g' net_update.xml | sed -i 's/192.168.1.1/192.168.1.254/g' net_update.xml
+	virsh net-undefine default
+	virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
+	rm net_update.xml
+endif
+
+create-pool:
+	test -d $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL) || mkdir -p $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL) || chmod -R rwx $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)
+ifneq ($(shell virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-info $(LIBVIRT_TEMPLATE_POOL)  >> /dev/null 2>&1 && echo 0 || echo 1), 0)
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-define-as $(LIBVIRT_TEMPLATE_POOL) dir - - - - "$(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)" && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-build $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-start $(LIBVIRT_TEMPLATE_POOL) && virsh -c $(LIBVIRT_HYPERVISOR_URI) pool-autostart $(LIBVIRT_TEMPLATE_POOL)
+endif
 
 image: build-image upload-image
 
 build-image:
 	rm -rf  packer/output
 	$(eval CRYPTED_PASSWORD = $$(shell openssl passwd -6 "$(ROOT_PASSWORD)"))
-	sed -i -r 's@^(d-i passwd\/root-password-crypted password).*@\1 $(CRYPTED_PASSWORD)@g' packer/preseed/debian10.txt
+	sed -i -r 's@^(d-i passwd\/root-password-crypted password).*@\1 $(CRYPTED_PASSWORD)@g' packer/preseed/debian11.txt
 	cd packer && ROOT_PASSWORD=$(ROOT_PASSWORD) SSH_PUB_KEY="$(shell cat $(SSH_IDENTITY).pub)" packer build base.json
 
 upload-image:
-	$(eval  size = $(shell stat -Lc%s packer/output/debian10))
-	- virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-list $(LIBVIRT_IMAGES_POOL) | grep $(LIBVIRT_IMAGE_NAME) && virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-delete --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME)
-	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-create-as $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) $(size) --format qcow2 && \
-	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_IMAGES_POOL) $(LIBVIRT_IMAGE_NAME) packer/output/debian10
+	$(eval  size = $(shell stat -Lc%s packer/output/debian11))
+	- virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-list $(LIBVIRT_TEMPLATE_POOL) | grep $(LIBVIRT_IMAGE_NAME) && virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-delete --pool $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME)
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-create-as $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME) $(size) --format qcow2 && \
+	virsh -c $(LIBVIRT_HYPERVISOR_URI) vol-upload --pool $(LIBVIRT_TEMPLATE_POOL) $(LIBVIRT_IMAGE_NAME)  packer/output/debian11
 
 import-kube-nodes:
 	[ $(CLUSTER) -eq 3 ] && { \
@@ -76,3 +122,8 @@ create-vms: import-kube-nodes
 
 run-playbook: create-vms
 	cd ansible && ansible-playbook -u root -i traefik_inventory -e "traefikee_license_key=$(TRAEFIKEE_LICENSE_KEY)" site.yml
+
+scratch-clusters:
+	for i in $$(virsh list | awk -F' ' '{print $$2}' | grep -v Name); do virsh destroy $$i; virsh undefine $$i; done
+	rm terraform/.terraform.lock.hcl terraform/*.tfstate ansible/traefik_inventory
+	rm -rf $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)/kube*.qcow2 $(TEMPLATE_FOLDER_PATH)$(LIBVIRT_TEMPLATE_POOL)/traefik*.qcow2

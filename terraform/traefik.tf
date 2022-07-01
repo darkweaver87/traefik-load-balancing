@@ -2,7 +2,7 @@ terraform {
   required_providers {
     libvirt = {
       source  = "github.com/dmacvicar/libvirt"
-      version = "0.6.2"
+      version = "0.6.14"
     }
   }
 }
@@ -30,24 +30,24 @@ provider "libvirt" {
 resource "libvirt_volume" "disk" {
   count = length(var.vms)
   name  = "${var.vms[count.index].name}.qcow2"
-  pool = "images"
+  pool = "templates"
   base_volume_pool = "templates"
-  base_volume_name = "debian10-traefik.qcow2"
- #  source = "templates/${lookup(var.vms[count.index], "image", "debian10-traefik")}.qcow2"
+  base_volume_name = "debian11-traefik.qcow2"
+ #  source = "templates/${lookup(var.vms[count.index], "templates", "debian11-traefik")}.qcow2"
 }
 
 resource "libvirt_domain" "vm" {
   count = length(var.vms)
   name  = var.vms[count.index].name
 
-  qemu_agent = true
   autostart = true
 
   vcpu   = lookup(var.vms[count.index], "cpu", 1)
   memory = lookup(var.vms[count.index], "memory", 512)
 
   network_interface {
-    bridge = "br0"
+    network_name = "default"
+    bridge = "virbr0"
     wait_for_lease = true
   }
 
@@ -67,7 +67,6 @@ resource "libvirt_domain" "vm" {
 
   provisioner "ansible" {
     when = create
-
     connection {
       type = "ssh"
       host = self.network_interface.0.addresses.0
@@ -79,8 +78,8 @@ resource "libvirt_domain" "vm" {
       connect_timeout_seconds = 10
       connection_attempts = 10
       ssh_keyscan_timeout = 60
-      insecure_no_strict_host_key_checking = false
-      insecure_bastion_no_strict_host_key_checking = false
+      insecure_no_strict_host_key_checking = true
+      insecure_bastion_no_strict_host_key_checking = true
       user_known_hosts_file = ""
       bastion_user_known_hosts_file = ""
     }
