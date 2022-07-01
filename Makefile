@@ -80,7 +80,7 @@ endif
 ifeq ($(IS_BRIDGE_UP),1)
 	virsh net-dumpxml --network default > net_update.xml 
 	sed -i 's/192.168.122./192.168.1./g' net_update.xml && sed -i 's/192.168.1.254/192.168.1.253/g' net_update.xml | sed -i 's/192.168.1.1/192.168.1.254/g' net_update.xml
-	virsh net-destroy default && virsh net-undefine default
+	virsh net-undefine default
 	virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
 	rm net_update.xml
 endif
