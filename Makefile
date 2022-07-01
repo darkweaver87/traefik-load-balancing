@@ -14,6 +14,7 @@ $(eval QEMU_INIT_USER=$(shell grep "#user = " /etc/libvirt/qemu.conf | cut -d'"'
 $(eval QEMU_INIT_GROUP=$(shell grep "#group = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
 $(eval QEMU_SECU_DRIVER=$(shell grep "#security_driver = " /etc/libvirt/qemu.conf | cut -d'"' -f2))
 $(eval BRIDGE_IP=$(shell ip -br addr show virbr0 | awk -F" " '{print $$3}'))
+$(eval IS_BRIDGE_UP=$(shell ip a show virbr0 up 2>/dev/null 1>&2; echo $$?))
 TEMPLATE_FOLDER_PATH=/libvirt/
 CLUSTER=1
 TRAEFIKEE_LICENSE="N/A"
@@ -67,7 +68,16 @@ ifeq ($(QEMU_INIT_USER),root)
 endif
 
 modify-network:
-ifeq ($(BRIDGE_IP),192.168.122.1/24)
+ifeq ($(IS_BRIDGE_UP),0)
+  ifeq ($(BRIDGE_IP),192.168.122.1/24)
+	virsh net-dumpxml --network default > net_update.xml 
+	sed -i 's/192.168.122./192.168.1./g' net_update.xml && sed -i 's/192.168.1.254/192.168.1.253/g' net_update.xml | sed -i 's/192.168.1.1/192.168.1.254/g' net_update.xml
+	virsh net-destroy default && virsh net-undefine default
+	virsh net-define --file net_update.xml && virsh net-start default && virsh net-autostart default
+	rm net_update.xml
+  endif
+endif
+ifeq ($(IS_BRIDGE_UP),1)
 	virsh net-dumpxml --network default > net_update.xml 
 	sed -i 's/192.168.122./192.168.1./g' net_update.xml && sed -i 's/192.168.1.254/192.168.1.253/g' net_update.xml | sed -i 's/192.168.1.1/192.168.1.254/g' net_update.xml
 	virsh net-destroy default && virsh net-undefine default
